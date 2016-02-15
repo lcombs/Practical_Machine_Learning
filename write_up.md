@@ -210,3 +210,6 @@ rf_pred <-
 ```
 
 The predicted values for the 20 test problems are B, A, B, A, A, E, D, B, A, A, B, C, B, A, E, E, A, B, B, B.
+
+
+*** Note: These documents are available at: https://github.com/lcombs/Practical_Machine_Learning ***

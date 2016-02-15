@@ -165,3 +165,6 @@ rf_pred <-
 ```
 
 The predicted values for the 20 test problems are `r rf_pred`.
+
+
+*** Note: These documents are available at: https://github.com/lcombs/Practical_Machine_Learning ***
