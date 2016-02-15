@@ -1,0 +1,165 @@
+---
+title: "Predictive Assignment Writeup"
+author: "lcombs"
+date: "02/11/2016"
+output: html_document
+---
+
+# Background
+
+Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement – a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this project, your goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways. 
+
+# Data
+
+The data for this project come from this source: http://groupware.les.inf.puc-rio.br/har. 
+
+The training data for this project are available here: https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv
+
+The test data are available here: https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv
+
+# Goal
+
+The goal for this project is to predict the manner in which an individual did an exercise; *i.e. how well they did this certain activity*. This is the "classe" variable in the training set.  The report includes a description of how the model was built, how cross validation was used, what the expected out of sample error is, and how choices were made along the way.
+
+# Reading the data
+
+```{r, message=FALSE, warning=FALSE}
+library(magrittr)
+
+library(RCurl)
+
+content <- 
+        getURL("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv")
+
+train <- 
+        read.csv(text = content,
+                 na.strings = c("NA", "#DIV/0!", ""))
+
+content <- 
+        getURL("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv")
+
+test <- 
+        read.csv(text = content,
+                 na.strings = c("NA", "#DIV/0!", ""))
+
+# str(train)
+# names(train)
+
+library(data.table)
+
+train <- 
+        as.data.table(train)
+
+test <- 
+        as.data.table(test)
+
+rm(content)
+
+```
+
+# Examine the classe variable. 
+
+The "classe" variable in the dataset is a factor variable with levels A-E, indicators for the manner in which an individual conducted a particular exercise.
+
+```{r, fig.height=4, fig.width=6}
+
+train[, classe]  %>% class()
+
+train[, classe] %>% head(5)
+
+barplot(train[, classe] %>% table(), 
+        main = "Frequency of Classe in Training")
+```
+
+# Clean the data.
+
+Since most machine learning algorithms do not handle NAs well, we remove all the columns that contain NAs. We also remove the time-series variables.
+
+
+```{r}
+
+NAs <- 
+        apply(train, 
+              2, 
+              function(x) 
+                      sum(is.na(train[, x]))) 
+NAs <- 
+        NAs[(NAs > 0)] %>%
+        names() 
+
+train <- 
+        train[, !NAs, 
+              with = FALSE] 
+
+# rm time series variables
+train <- 
+        train[, -c(1:7), 
+              with = FALSE]
+
+
+# remove the same columns of test
+test <- 
+        test[, !NAs, 
+              with = FALSE]
+
+test <- 
+        test[, -c(1:7), 
+              with = FALSE]
+```
+
+# Building Models - Accuracy Check
+
+In order to show a test of the accuracy of the model, we will part the original training data into our own training and testing sets.
+
+```{r, message=FALSE, warning=FALSE}
+library(caret)
+
+set.seed(2)
+partition <- 
+        createDataPartition(y = train$classe, 
+                            p = .75, list = FALSE)
+
+my_train <- train[partition, ]
+my_test <- train[-partition,]
+
+my_model <- 
+        train(classe ~ ., 
+              data = my_train, 
+              method = "rf", 
+              ntree = 5,
+              type = "class")
+
+my_predictions <- 
+        predict(my_model, newdata = my_test)
+
+confusionMatrix(my_predictions, my_test[, classe])
+```
+
+This confusion matrix shows the model is very accurate. We can expect to accurately predict how these activities were done using the other vairables in the dataset.
+
+# Error
+
+The out-of-sample error is: `r (1 - sum(my_predictions == my_test[, classe])/length(my_predictions))*100`%. 
+
+# Building Models - Prediction with Test Data
+
+Now, we remake the model with all the training data so that we can make sure to answer the quiz questions correctly. Here, we use cross validation training the random forest on the original training data and only testing it on the original test data. The test data is not used for anything besides the final step.
+
+```{r}
+set.seed(2)
+
+# predict using any of the other variables
+rf_model <- 
+        train(classe ~ ., 
+              data = train, 
+              method = "rf", 
+              ntree = 5,
+              type = "class")
+
+rf_pred <- 
+        predict(rf_model, 
+                test)
+
+```
+
+The predicted values for the 20 test problems are `r rf_pred`.
