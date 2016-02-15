@@ -1,11 +1,6 @@
----
-title: "Predictive Assignment Writeup"
-author: "lcombs"
-date: "02/11/2016"
-output: 
-        html_document:
-                keep_md: true       
----
+# Predictive Assignment Writeup
+lcombs  
+02/11/2016  
 
 # Background
 
@@ -25,7 +20,8 @@ The goal for this project is to predict the manner in which an individual did an
 
 # Reading the data
 
-```{r, message=FALSE, warning=FALSE}
+
+```r
 library(magrittr)
 
 library(RCurl)
@@ -56,30 +52,44 @@ test <-
         as.data.table(test)
 
 rm(content)
-
 ```
 
 # Examine the classe variable. 
 
 The "classe" variable in the dataset is a factor variable with levels A-E, indicators for the manner in which an individual conducted a particular exercise.
 
-```{r, fig.height=4, fig.width=6}
 
+```r
 train[, classe]  %>% class()
+```
 
+```
+## [1] "factor"
+```
+
+```r
 train[, classe] %>% head(5)
+```
 
+```
+## [1] A A A A A
+## Levels: A B C D E
+```
+
+```r
 barplot(train[, classe] %>% table(), 
         main = "Frequency of Classe in Training")
 ```
+
+![](write_up_files/figure-html/unnamed-chunk-2-1.png) 
 
 # Clean the data.
 
 Since most machine learning algorithms do not handle NAs well, we remove all the columns that contain NAs. We also remove the time-series variables.
 
 
-```{r}
 
+```r
 NAs <- 
         apply(train, 
               2, 
@@ -113,7 +123,8 @@ test <-
 
 In order to show a test of the accuracy of the model, we will part the original training data into our own training and testing sets.
 
-```{r, message=FALSE, warning=FALSE}
+
+```r
 library(caret)
 
 set.seed(2)
@@ -137,17 +148,52 @@ my_predictions <-
 confusionMatrix(my_predictions, my_test[, classe])
 ```
 
+```
+## Confusion Matrix and Statistics
+## 
+##           Reference
+## Prediction    A    B    C    D    E
+##          A 1387   10    1    1    1
+##          B    8  924   12    2    5
+##          C    0   10  840   13    0
+##          D    0    2    2  786    4
+##          E    0    3    0    2  891
+## 
+## Overall Statistics
+##                                           
+##                Accuracy : 0.9845          
+##                  95% CI : (0.9806, 0.9878)
+##     No Information Rate : 0.2845          
+##     P-Value [Acc > NIR] : < 2.2e-16       
+##                                           
+##                   Kappa : 0.9804          
+##  Mcnemar's Test P-Value : NA              
+## 
+## Statistics by Class:
+## 
+##                      Class: A Class: B Class: C Class: D Class: E
+## Sensitivity            0.9943   0.9737   0.9825   0.9776   0.9889
+## Specificity            0.9963   0.9932   0.9943   0.9980   0.9988
+## Pos Pred Value         0.9907   0.9716   0.9733   0.9899   0.9944
+## Neg Pred Value         0.9977   0.9937   0.9963   0.9956   0.9975
+## Prevalence             0.2845   0.1935   0.1743   0.1639   0.1837
+## Detection Rate         0.2828   0.1884   0.1713   0.1603   0.1817
+## Detection Prevalence   0.2855   0.1939   0.1760   0.1619   0.1827
+## Balanced Accuracy      0.9953   0.9834   0.9884   0.9878   0.9938
+```
+
 This confusion matrix shows the model is very accurate. We can expect to accurately predict how these activities were done using the other vairables in the dataset.
 
 # Error
 
-The out-of-sample error is: `r (1 - sum(my_predictions == my_test[, classe])/length(my_predictions))*100`%. 
+The out-of-sample error is: 1.5497553%. 
 
 # Building Models - Prediction with Test Data
 
 Now, we remake the model with all the training data so that we can make sure to answer the quiz questions correctly. Here, we use cross validation training the random forest on the original training data and only testing it on the original test data. The test data is not used for anything besides the final step.
 
-```{r}
+
+```r
 set.seed(2)
 
 # predict using any of the other variables
@@ -161,7 +207,6 @@ rf_model <-
 rf_pred <- 
         predict(rf_model, 
                 test)
-
 ```
 
-The predicted values for the 20 test problems are `r rf_pred`.
+The predicted values for the 20 test problems are B, A, B, A, A, E, D, B, A, A, B, C, B, A, E, E, A, B, B, B.
